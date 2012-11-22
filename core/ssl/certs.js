@@ -24,10 +24,10 @@ var genCert = function(host, callback) {
 		cache[host] = [ callback ];
 	}
 	exec("openssl req -new -key master_server.key -out " + host + ".csr "
-			+ "-days 365 -subj '/C=US/O=Organization/CN=" + host
-			+ "' -config ca/openssl.ca.cnf", function(error, stdout, stderr) {
+			+ "-days 365 -subj '/C=US/O=Organization/CN=" + host + "' -config ca/openssl.ca.cnf"
+		, function(error, stdout, stderr) {
 		console.log("create cert: " + host);
-		//console.log("2");
+		//
 		var openssl = spawn('openssl', [ 'ca', '-notext', '-config',
 				'ca/openssl.ca.cnf', '-out', crtFile, '-infiles', csrFile ]);
 
@@ -36,29 +36,30 @@ var genCert = function(host, callback) {
 		}, 3000);
 
 		openssl.stdout.on('data', function(data) {
-			//console.log("4");
+		
 		});
 
 		openssl.stderr.on('data', function(data) {
-			//console.log('' + data );
+			
 			if (data.toString().indexOf('? [y/n]') !== -1) {
 				openssl.stdin.write('y\n');
-				//console.log("3");
 			}
+			
 		});
 		openssl.on('exit', function() {
 			clearTimeout(timerKill);
 
 			try {
 				fs.unlinkSync(csrFile);
-			} catch (err) {
-			}
+			} catch (err) {}
 
-			for (i in cache[host]) {
-				if (typeof cache[host][i] == 'function')
-					cache[host][i](fs.existsSync(crtFile) ? path
-							.normalize(__dirname + '/' + crtFile) : false);
-			}
+			cache[host].forEach( function(callback){
+					if (typeof callback == 'function'){			
+						callback( fs.existsSync(crtFile) ? path.normalize(__dirname + '/' + crtFile) : false );
+						delete callback;
+					}
+			});
+			
 			fs.writeFile('ca/db/index.txt', '');
 			fs.unlink('ca/db/index.txt.old');
 			fs.readdir('ca/db/newcerts/', function(err, files) {
