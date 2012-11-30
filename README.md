@@ -8,6 +8,19 @@ All rights reserved
 NetFilter
 =========
 
+
+## אופן השימוש
+
+בשביל להפעיל את השרת צריך node מותקן על המחשב
+
+http://nodejs.org/
+
+```sh
+node core/proxy.js
+```
+
+## הסבר על פעולת הפרוקסי
+
 פילטר לאינטרנט דרך פרוקסי
 
 הפילטר מבוסס על חוקים. שצריך להגדיר כדי לקבוע את פעולת הסינון.
@@ -52,7 +65,7 @@ exports.requestHandle = function( createRequest , request , response , urlParse,
 
 createRequest - מכיל פונקציה שמיצרת בקשה לשרת 
 
-הפונקציה מקבלת פונקציה שמתרוץ אחרי יצירת הבקשה.
+הפונקציה מקבלת פונקציה שתרוץ אחרי יצירת הבקשה.
 הוא מעביר פרמטר אחד של http://nodejs.org/api/stream.html
 
 request - בקשה מהשרת פרוקסי מסוג http://nodejs.org/api/stream.html
