@@ -1,6 +1,7 @@
 NetFilter
 =========
 
+
 filter internet by proxy 
 
 All rights reserved
@@ -25,7 +26,7 @@ node core/proxy.js
 
 הפילטר מבוסס על חוקים. שצריך להגדיר כדי לקבוע את פעולת הסינון.
 
-החוקים נמצאים בקובץ core/proxy.js במשתנה בשם rules בצורת array 
+החוקים נמצאים בקובץ server.js במשתנה בשם rules בצורת array 
 
 החוקים קובעים איזה פעולה הפרוקסי יפעיל לכל חוק.
 
@@ -105,4 +106,7 @@ exports.requestHandle = function( createRequest , request , response , urlParse,
 
 ```
 
+
+=======
+filter internet by proxy 
 
