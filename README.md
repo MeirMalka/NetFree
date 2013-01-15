@@ -1,11 +1,9 @@
 NetFilter
 =========
 
-
 filter internet by proxy 
 
 All rights reserved
-
 
 NetFilter
 =========
@@ -18,7 +16,7 @@ NetFilter
 http://nodejs.org/
 
 ```sh
-node core/proxy.js
+node server.js
 ```
 
 ## הסבר על פעולת הפרוקסי
@@ -107,7 +105,4 @@ exports.requestHandle = function( createRequest , request , response , urlParse,
 
 ```
 
-
-=======
-filter internet by proxy 
 
