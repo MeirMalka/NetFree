@@ -12,4 +12,4 @@ openssl req -new -key master_server.key -out $HOST.csr \
 
 openssl ca -config ca/openssl.ca.cnf -notext  -out $HOST.crt  -infiles $HOST.csr 
 
-rm $HOST.csr
+#rm $HOST.csr
