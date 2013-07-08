@@ -6,12 +6,13 @@
 	</projects>
 	<buildSpec>
 		<buildCommand>
-			<name>com.eclipsesource.jshint.ui.builder</name>
+			<name>json.validation.builder</name>
 			<arguments>
 			</arguments>
 		</buildCommand>
 	</buildSpec>
 	<natures>
 		<nature>org.nodeclipse.ui.NodeNature</nature>
+		<nature>json.validation.nature</nature>
 	</natures>
 </projectDescription>
