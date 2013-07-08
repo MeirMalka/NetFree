@@ -20,14 +20,14 @@ var __diractions = __dirname + '/actions/';
 var actions = {} ;
 
 var rules ={ 
-	'blockhost.co.il1' : [
+	'kikarhashabat.co.il' : [
 		 { url : /.*/  , action:  'generic_deny' }
 	]
 };
 
 var getAction = function( host ,  url )
 {
-	host = host.replace(/^www\.|\.$/, '');
+	host = host.replace(/^www\.|\.$/g, '');
 	
 	if(rules[host])
 	{
