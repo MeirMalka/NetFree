@@ -1,11 +1,11 @@
-NetFilter
+NetFree
 =========
 
 filter internet by proxy 
 
 All rights reserved
 
-NetFilter
+NetFree
 =========
 
 נעשו שינויים מהותיים בקוד כך שהעזרה לא מדויקת

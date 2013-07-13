@@ -1,5 +1,5 @@
 {
-  "name": "NetFilter",
+  "name": "NetFree",
   "version": "0.0.1",
   "scripts": {
     "start": "node bin/server"
