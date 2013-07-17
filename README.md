@@ -1,8 +1,7 @@
-
 NetFree
 =========
 
-filter internet by proxy 
+Internet free garbage by proxy 
 
 
 ## אופן השימוש
