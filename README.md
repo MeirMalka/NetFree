@@ -1,7 +1,7 @@
 NetFree
 =========
 
-Internet free garbage by proxy 
+Internet free of garbage by proxy 
 
 
 ## אופן השימוש
