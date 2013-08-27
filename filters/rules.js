@@ -7,35 +7,33 @@ var Rules = function(option){
 	
 	var _this = this;
 	if(option){
-		this._connection = option.connection;
-		//console.log(this._connection)
+		this.onnex = option.onnex;
 	}
 	this.rulesCache = lrucache({ max: 1000 , maxAge: 1000 * 60 * 60 * 24 } );
 	
-	
-	
-	
-	if( this._connection.on ){
-		this._connection.on('request', function( data , res , s ){
-			if(data.action == "change_rules")
-				for(var i in data.data)
-					_this.rulesCache.del(data.data[i]);
-
+	if(this.onnex){
+		
+		this.onnex.subscribe("rules-urls/change",function(err , changeRulesArray ){
+			for(var i in changeRulesArray)
+				_this.rulesCache.del(changeRulesArray[i]);
+			
+			console.log("rules-urls/change" , changeRulesArray);
 		});
+		
 	}
 	
 	
 	this._loadsWait = {};
 	
-}
+};
 
 
 
 Rules.prototype.getFilter = function( uri ,callback )
 {
-	var host , rules , _this = this;
+	var host , rule , _this = this;
 	
-	urlParse = url.parse( uri );
+	var urlParse = url.parse( uri );
 	
 	urlParse.hostname = urlParse.hostname.replace(/^www\.|\.$/g, '');
 	
@@ -90,16 +88,18 @@ Rules.prototype._load = function( hostName , callback )
 	} else {
 		this._loadsWait[hostName] = [ callback ];
 	}
-	
-	
-	if(this._connection && this._connection.request){
-		this._connection.request( { action: 'rules-urls' , data:{ hostName: hostName } } , function( data ){
 
-			if( data.rules )
+	
+	if(this.onnex){
+		
+		this.onnex.callFunction("rules-urls", hostName , function( err , result ){
+
+			if( result.rules )
 			{
-				for(var host in data.rules)
+				console.log("rules-urls" , result);
+				for(var host in result.rules)
 				{
-					var rule = data.rules[host];
+					var rule = result.rules[host];
 					if(rule.paths && rule.paths.length)
 						{
 							rule.paths.forEach(function(element, index, array){
@@ -120,16 +120,19 @@ Rules.prototype._load = function( hostName , callback )
 				_this.rulesCache.set( hostName ,  false );
 			}
 			
+			var cbs = _this._loadsWait[hostName]; delete _this._loadsWait[hostName];
 			do{
-				var shiftcb = _this._loadsWait[hostName].shift();
-				if (typeof shiftcb == 'function') shiftcb();	
+				var shiftcb = cbs.shift(); if (typeof shiftcb == 'function') shiftcb();	
 			}while(shiftcb);
+			
 		});
 	}else{
+		
+		var cbs = _this._loadsWait[hostName] ;  delete  _this._loadsWait[hostName];
 		do{
-			var shiftcb = _this._loadsWait[hostName].shift();
-			if (typeof shiftcb == 'function') shiftcb("no connection");
+			var shiftcb = cbs.shift(); if (typeof shiftcb == 'function') shiftcb("no connection");
 		}while(shiftcb);
+		
 	}
 
 }
@@ -156,22 +159,23 @@ Rules.prototype.findFilter = function( hostName )
 	}
 	
 }
-	
+
+
 Rules.prototype._pathRegexp = function( path , domainType ) {
-		  if (path instanceof RegExp) return path;
-		  if (Array.isArray(path)){
-			  for (var i in path)
-			  {
-				  if(path[i] instanceof RegExp ) path[i] = path[i].source;
-			  }
-			  path = '(' + path.join('|') + ')';
-		  }
+		if (path instanceof RegExp) return path;
+		if (Array.isArray(path)){
+			for (var i in path)
+			{
+				if(path[i] instanceof RegExp ) path[i] = path[i].source;
+			}
+			path = '(' + path.join('|') + ')';
+		}
 		
-		  path = path.replace(/([\/.])/g, '\\$1');
-		  path = domainType ? path.replace(/\*(\\\.)?/g, '(.*)') : path.replace(/\*/g, '(.*)');
-		  
-		  return new RegExp('^' + (domainType ? '' : '\\/?') + path + '$', 'i');
-}
+        path = path.replace(/([\/.])/g, '\\$1');
+		path = domainType ? path.replace(/\*(\\\.)?/g, '(.*)') : path.replace(/\*/g, '(.*)');
+        
+		return new RegExp('^' + (domainType ? '' : '\\/?') + path + '$', 'i');
+};
 
 var rules = false;
 
@@ -183,16 +187,16 @@ exports.varsion = "0.0.1" ;
 exports.onRequest = exports.onResponse = function(sess)
 {
 	
-	if(!rules) rules  = new Rules({ connection: this.mainDB });
+	if(!rules) rules  = new Rules({ onnex: this.onnex });
 	
-	if(this.filter != undefined){
+    if(this.filter !== undefined){
 		this.filters.list.push(this.filter);
 		this.next();
 	}
 	else if( this.request && this.request.url)
 	{
 		rules.getFilter(this.request.url, function( err , filter ){
-			sess.filter = filter;
+			sess.filter = filter || false;
 			sess.filters.list.push(sess.filter);
 			sess.next();
 		});
