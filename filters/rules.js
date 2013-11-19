@@ -9,13 +9,24 @@ var Rules = function(option){
 	if(option){
 		this.onnex = option.onnex;
 	}
-	this.rulesCache = lrucache({ max: 1000 , maxAge: 1000 * 60 * 60 * 24 } );
+	this.rulesCache = lrucache({ max: 1000 , maxAge: 1000 * 60 * 60 * 24 });
 	
 	if(this.onnex){
 		
-		this.onnex.subscribe("rules-urls/change",function(err , changeRulesArray ){
-			for(var i in changeRulesArray)
-				_this.rulesCache.del(changeRulesArray[i]);
+		this.onnex.subscribe("rules/change",function(err , changeRulesArray ){
+			
+			if(Array.isArray(changeRulesArray))
+				changeRulesArray.forEach(function(rule){
+					if(!rule.host)return; 
+					_this.rulesCache.del(rule.host);
+					if(rule.sourceHostRegex) rule.hostRegex = _this._pathRegexp(rule.sourceHostRegex , true);
+					if(rule.hostRegex &&  rule.hostRegex.test)
+						_this.rulesCache.forEach(function(value,key,cache){
+							if(rule.hostRegex.test(value.host || '')) _this.rulesCache.del(key);
+						});
+		
+				});
+			
 			
 			console.log("rules-urls/change" , changeRulesArray);
 		});
@@ -24,13 +35,14 @@ var Rules = function(option){
 	
 	
 	this._loadsWait = {};
-	
 };
 
 
 
 Rules.prototype.getFilter = function( uri ,callback )
 {
+	
+	
 	var host , rule , _this = this;
 	
 	var urlParse = url.parse( uri );
@@ -38,10 +50,11 @@ Rules.prototype.getFilter = function( uri ,callback )
 	urlParse.hostname = urlParse.hostname.replace(/^www\.|\.$/g, '');
 	
 	host = this.findFilter(urlParse.hostname);
-
+	
 	if(host) 
 	{
 		rule = this.rulesCache.get( host );
+
 		var go = 5;
 		while( rule.go && --go){
 			if( this.rulesCache.has(rule.go) ) 
@@ -88,53 +101,47 @@ Rules.prototype._load = function( hostName , callback )
 	} else {
 		this._loadsWait[hostName] = [ callback ];
 	}
-
+	
+	callback = function(){
+		var cbs = _this._loadsWait[hostName] ;  delete  _this._loadsWait[hostName];
+		do{
+			var shiftcb = cbs.shift(); if (typeof shiftcb == 'function') shiftcb.apply(null,arguments);
+		}while(shiftcb);
+	};
 	
 	if(this.onnex){
 		
-		this.onnex.callFunction("rules-urls", hostName , function( err , result ){
+		this.onnex.callFunction("getRule", hostName , function( err , rule ){
 
-			if( result.rules )
+			
+			if( rule  && rule.host )
 			{
-				console.log("rules-urls" , result);
-				for(var host in result.rules)
+				console.log("rules-urls" , rule);
+
+				if(rule.paths && rule.paths.length)
 				{
-					var rule = result.rules[host];
-					if(rule.paths && rule.paths.length)
-						{
-							rule.paths.forEach(function(element, index, array){
-								if( element.path )
-								{exports = Rules;
-									array[index].match = _this._pathRegexp(element.path );
-									delete array[index].path;
-								} 
-							});
-						}
-				
-						rule.keyRegExp = _this._pathRegexp(host , true);
-						_this.rulesCache.set( host ,  rule );
+					rule.paths.forEach(function(element, index, array){
+						if( element.path ){
+							array[index].match = _this._pathRegexp(element.path );
+							delete array[index].path;
+						} 
+					});
 				}
+						
+				if(rule.sourceHostRegex) rule.hostRegex = _this._pathRegexp(rule.sourceHostRegex , true);
+				_this.rulesCache.set( rule.host ,  rule );
+				
 			}
 			if(!_this.findFilter(hostName))
 			{
 				_this.rulesCache.set( hostName ,  false );
 			}
 			
-			var cbs = _this._loadsWait[hostName]; delete _this._loadsWait[hostName];
-			do{
-				var shiftcb = cbs.shift(); if (typeof shiftcb == 'function') shiftcb();	
-			}while(shiftcb);
-			
+			callback();
 		});
 	}else{
-		
-		var cbs = _this._loadsWait[hostName] ;  delete  _this._loadsWait[hostName];
-		do{
-			var shiftcb = cbs.shift(); if (typeof shiftcb == 'function') shiftcb("no connection");
-		}while(shiftcb);
-		
+		callback("no connection");
 	}
-
 }
 
 Rules.prototype.findFilter = function( hostName )
@@ -146,7 +153,7 @@ Rules.prototype.findFilter = function( hostName )
 		return hostName;
 	}else{
 		this.rulesCache.forEach(function(value,key,cache){
-			if(value.keyRegExp &&  value.keyRegExp.test && value.keyRegExp.test(hostName))
+			if(value.hostRegex &&  value.hostRegex.test && value.hostRegex.test(hostName))
 			{
 				
 				_this.rulesCache.set( hostName , { go: key } );
@@ -184,8 +191,9 @@ exports.name = "rules" ;
 
 exports.varsion = "0.0.1" ;
 
-exports.onRequest = exports.onResponse = function(sess)
+exports.onRequest = exports.onResponse = function(ctx)
 {
+	if(!this.onnex) return this.next();
 	
 	if(!rules) rules  = new Rules({ onnex: this.onnex });
 	
@@ -196,9 +204,9 @@ exports.onRequest = exports.onResponse = function(sess)
 	else if( this.request && this.request.url)
 	{
 		rules.getFilter(this.request.url, function( err , filter ){
-			sess.filter = filter || false;
-			sess.filters.list.push(sess.filter);
-			sess.next();
+			ctx.filter = filter || false;
+			ctx.filters.list.push(ctx.filter);
+			ctx.next();
 		});
 	}
 };

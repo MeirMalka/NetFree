@@ -5,7 +5,9 @@
     "start": "node bin/server"
   },
   "dependencies": {
-     "lru-cache": "*" ,
-     "onnex": "*"
+    "lru-cache": "*",
+    "onnex": "~0.1.5",
+    "openssl-ca-node": "git+https://github.com/magicode/openssl-ca-node",
+    "relive": "~0.2.0"
   }
 }
